@@ -8,16 +8,18 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
+        with:
+          fetch-depth: 0 # Ensures all history is fetched
 
       - name: Count files changed
-        id: files_changed
-        run: echo "::set-output name=count::$(git diff --name-only ${{ github.event.before }} ${{ github.head_ref }} | wc -l)"
+        run: |
+          echo "FILE_COUNT=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} | wc -l)" >> $GITHUB_ENV
 
       - name: Notify Slack if threshold exceeded
-        if: steps.files_changed.outputs.count > 30
+        if: ${{ env.FILE_COUNT > 30 }}
         uses: rtCamp/action-slack-notify@v2
         env:
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
-          SLACK_COLOR: '#FF0000'
-          SLACK_MESSAGE: 'A PR with more than 30 file changes was submitted. Please review it for in-person discussion.'
-          SLACK_TITLE: 'High File Change PR Alert'
+          SLACK_COLOR: "#FF0000"
+          SLACK_MESSAGE: "A PR with more than 30 file changes was submitted. Please review it for in-person discussion."
+          SLACK_TITLE: "High File Change PR Alert"
